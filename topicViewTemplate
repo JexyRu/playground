@@ -246,9 +246,26 @@
 </div>
 <if test="modOptionsDropdown:|:$displayData['mod_links'] AND ( $this->memberData['is_mod'] OR $this->memberData['member_id'] == $topic['starter_id'] )">
 <ul class='ipbmenu_content' id='topic_mod_options_menucontent'  style='display:none'>
+    <!-- start SDKiller -->
     <foreach loop="mod_links:$displayData['mod_links'] as $_mod_link">
-        <li><a <if test="isDelete:|:$_mod_link['option'] == '08'"> data-confirmaction="true"</if> href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do={$_mod_link['option']}" base="public"}" class='modlink_{$_mod_link['option']}'>{$_mod_link['value']}</a></li>
+        <if test="pinOptions:|:$_mod_link['option'] != '15' && $_mod_link['option'] != '16'">
+            <li><a <if test="isDelete:|:$_mod_link['option'] == '08'"> data-confirmaction="true"</if> href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do={$_mod_link['option']}" base="public"}" class='modlink_{$_mod_link['option']}'>{$_mod_link['value']}</a></li>
+        <else />
+            <if test="ispinned:|:$_mod_link['option'] == '16' && $topic['pinned'] && !$topic['paid'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum['id'] ]['pin_topic'])">
+                <li><a href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do={$_mod_link['option']}" base="public"}" class='modlink_{$_mod_link['option']}'>{$_mod_link['value']}</a></li>
+            </if>
+            <if test="isunpinned:|:$_mod_link['option'] == '15' && !$topic['pinned'] && !$data['paid'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum['id'] ]['unpin_topic'])">
+                <li><a href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do={$_mod_link['option']}" base="public"}" class='modlink_{$_mod_link['option']}'>{$_mod_link['value']}</a></li>
+            </if>
+        </if>
     </foreach>
+    <if test="isPaid:|:$topic['paid'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum['id'] ]['paid_down'])">
+        <li><a href='{parse url="app=forums&amp;module=extra&amp;section=paid&amp;f={$topic['forum_id']}&amp;t={$topic['tid']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;do=down&amp;_fromTopic=1" base="public"}' class='modlink_paid_down'>{$this->lang->words['topic_paid_down']}</a></li>
+    </if>   
+    <if test="isNotPaid:|:!$topic['paid'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum['id'] ]['paid_up'])">
+        <li><a href='{parse url="app=forums&amp;module=extra&amp;section=paid&amp;f={$topic['forum_id']}&amp;t={$topic['tid']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;do=up&amp;_fromTopic=1" base="public"}' class='modlink_paid_up'>{$this->lang->words['topic_paid_up']}</a></li> 
+    </if>
+    <!-- endof SDKiller -->
     <if test="$topic['topic_queuedposts'] AND $this->registry->class_forums->canQueuePosts( $forum['id'] )">
         <li><a href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do=p_approve" base="public"}">{parse expression="sprintf( $this->lang->words['nmo_p_approve'], $topic['topic_queuedposts'])"}</a></li>
     </if>
