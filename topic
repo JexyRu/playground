@@ -1,0 +1,171 @@
+<if test="queuedtopic:|:($this->memberData['is_mod'] AND ! $data['approved']) OR $data['_isDeleted']">
+<tr<if test="inforumschema:|:$inforum"> itemscope itemtype="http://schema.org/Article"</if> class='__topic <if test="queuedisreadif:|:!$data['folder_img']['is_read']">unread</if> expandable moderated' id='trow_{$data['_tid']}' data-tid="{$data['_tid']}">
+<else />
+<tr<if test="inforumelseschema:|:$inforum"> itemscope itemtype="http://schema.org/Article"</if> class='__topic <if test="queuedisreadelse:|:!$data['folder_img']['is_read']">unread</if> expandable' id='trow_{$data['_tid']}' data-tid="{$data['_tid']}">
+</if>
+	<td class='col_f_icon altrow short'>
+		{parse template="generateTopicIcon" group="global_other" params="$data['folder_img'], isset($data['_unreadUrl']) ? $data['_unreadUrl'] : ''"}
+	</td>
+	<td class='col_f_content <if test="hasmodlinks:|:$this->memberData['is_mod'] == 1 || $forum_data['permissions']['TopicSoftDelete']"> with_mod_links</if>'>
+		<if test="solvedBadge:|:$data['_answeredPid'] !== false">
+			<a href="{parse url="app=forums&amp;module=forums&amp;section=findpost&amp;pid={$data['_answeredPid']}" base="public"}"><span class='ipsBadge has_icon ipsBadge_green'><img class='icon' src="{$this->settings['img_url']}/icon_check_white_8px.png"> {$this->lang->words['topic_solved']}</span></a>
+		</if>
+		<if test="archivedBadge:|:$data['_archiveFlag'] == 'archived' && $this->lang->words['topic_is_archived']">
+			<span class='ipsBadge ipsBadge_lightgrey'>{$this->lang->words['topic_is_archived']}</span>
+		</if>
+		<if test="archivingBadge:|:$data['_archiveFlag'] == 'working'">
+			<span class='ipsBadge ipsBadge_grey'>{$this->lang->words['topic_is_beingarchived']}</span>
+		</if>
+		<if test="topicUnapproved:|:$data['approved'] == 0">
+			<span class='ipsBadge ipsBadge_orange'>{$this->lang->words['f_queued_badge']}</span>
+		<else />
+			<if test="queuedpostsImg:|:($this->memberData['is_mod'] AND $data['_hasqueued'])">
+				<a href='{parse url="showtopic={$data['tid']}&amp;modfilter=invisible_posts" seotitle="{$data['title_seo']}" template="showtopic" base="public"}' title='{$this->lang->words['view_uapproved_posts']}' data-tooltip="{parse expression="sprintf( $this->lang->words['topic_queued_count'], $data['topic_queuedposts'] )"}"><span class='ipsBadge ipsBadge_orange'>{$this->lang->words['f_queued_badge']}</span></a>
+			</if>
+		</if>
+		<if test="isHot:|:$data['folder_img']['is_hot'] && !$this->lang->words['topic_is_archived']">
+			<span class='ipsBadge ipsBadge_orange'>{$this->lang->words['topic_is_hot']}</span>
+		</if>
+		<if test="hasPrefix:|:!empty($data['tags']['formatted']['prefix'])">
+			{$data['tags']['formatted']['prefix']}
+		</if>
+		<if test="showForumNav:|: ! $inforum && $data['nav']">
+			<foreach loop="nav:$data['nav'] as $nav">
+				<a href="{parse url="$nav[1]" template="showforum" base="public" seotitle="$nav[2]"}" class="ipsText_small desc">{$nav[0]}</a> <span class="ipsText_small desc">&rarr;</span>&nbsp;
+			</foreach>
+		</if>
+		{$data['prefix']}
+		<h4>
+			<a itemprop="url" id="tid-link-{$data['_tid']}" href="{$data['_url']}" title='{parse expression="strip_tags($data['title'])"} {$this->lang->words['topic_started_on']} {parse date="$data['start_date']" format="LONG"}' class='topic_title' <if test="topicDeletedReason:|:$data['_isDeleted']">data-tooltip="{parse expression="sprintf( $this->lang->words['tdb__forumindex'], $other_data['sdData'][ $data['tid'] ]['members_display_name'] )"} {parse date="$other_data['sdData'][ $data['tid'] ]['sdl_obj_date']" format="long"}
+					<if test="showReason:|:$forum_data['permissions']['SoftDeleteReason']">
+						<if test="$other_data['sdData'][ $data['tid'] ]['sdl_obj_reason']">{$this->lang->words['dlt_reason']} {$other_data['sdData'][ $data['tid'] ]['sdl_obj_reason']}<else />{$this->lang->words['tdb__noreasongi']}</if>
+					</if>
+				"</if>>
+				<span itemprop="name">{parse expression="IPSText::truncate( $data['title'], 130 )"}</span>
+			</a>
+		</h4>
+		<br />
+		<span class='desc lighter blend_links'>
+			{parse expression="sprintf( $this->lang->words['topic_started_by'], $data['starter'] )"} <span itemprop="dateCreated">{parse date="$data['start_date']" format="DATE"}</span>
+			<if test="hasTags:|:isset($data['tags']) AND $data['tags']">
+				&nbsp; <img src='{$this->settings['img_url']}/icon_tag.png' /> {$data['tags']['formatted']['truncatedWithLinks']}
+			</if>
+		</span>
+		<if test="multipages:|:isset( $data['pages'] ) AND is_array( $data['pages'] ) AND count( $data['pages'] )">
+			<ul class='mini_pagination'>
+			<foreach loop="pages:$data['pages'] as $page">
+					<if test="haslastpage:|:$page['last']">
+						<li><a href="{parse url="showtopic={$data['tid']}&amp;page={$this->registry->getClass('topics')->stToPage($page['st'])}" seotitle="{$data['title_seo']}" template="showtopic" base="public"}" title='{$data['title']} {$this->lang->words['topic_goto_page']} {$page['page']}'>{$page['page']} {$this->lang->words['_rarr']}</a></li>
+					<else />
+						<li><a href="{parse url="showtopic={$data['tid']}&amp;page={$this->registry->getClass('topics')->stToPage($page['st'])}" seotitle="{$data['title_seo']}" template="showtopic" base="public"}" title='{$data['title']} {$this->lang->words['topic_goto_page']} {$page['page']}'>{$page['page']}</a></li>
+					</if>
+			</foreach>
+			</ul>
+		</if>
+	</td>
+	<if test="canReadPreview:|:$this->registry->permissions->check( 'read', $forum_data ) && $data['state'] != 'link'">
+	<td class='col_f_preview __topic_preview'>
+		<a href='{$data['_url']}' class='expander closed' title='{$this->lang->words['view_topic_preview']}'>&nbsp;</a>
+	</td>
+	<else />
+	<td></td>
+	</if>
+	<td class='col_f_views desc blend_links'>
+		<ul>
+			<li>
+				<if test="isLink:|:$data['state'] != 'link'">
+					
+					<if test="isMember:|:$this->memberData['member_id'] && $data['_archiveFlag'] != 'archived'"><a href="{parse url="app=forums&amp;module=extras&amp;section=stats&amp;do=who&amp;t={$data['tid']}" base="public"}" onclick="return ipb.forums.retrieveWhoPosted( {$data['tid']} );"></if>{parse format_number="$data['posts']"} <if test="replylang:|:intval($data['posts']) == 1">{$this->lang->words['reply']}<else />{$this->lang->words['replies']}</if><if test="isMemberCloseA:|:$this->memberData['member_id'] && $data['_archiveFlag'] != 'archived'"></a></if>
+					<meta itemprop="interactionCount" content="UserComments:{$data['posts']}"/>
+				</if>
+			</li>
+			<li class='views desc'>{parse format_number="$data['views']"} {$this->lang->words['views']}</li>
+		</ul>
+	</td>
+	<if test="canSeeLastInfo:|:$this->memberData['gbw_view_last_info']">
+	<td class='col_f_post'>
+		{parse template="userSmallPhoto" group="global" params="array_merge( $data, array( 'alt' => sprintf( $this->lang->words['findex_userphoto_alt'], $data['title'], $data['members_display_name'] ) ) )"}
+		<ul class='last_post ipsType_small'>
+			<li>{$data['last_poster']}</li>
+			<li>
+				<a href='{parse url="showtopic={$data['tid']}&amp;view=getlastpost" seotitle="{$data['title_seo']}" template="showtopic" base="public"}' title='{$this->lang->words['goto_last_post']}: {$data['title']}'>
+					<if test="hasPollBump:|:$data['last_real_post']">
+						{parse date="$data['last_real_post']" format="DATE"}
+					<else />
+						{parse date="$data['last_post']" format="DATE"}
+					</if>
+				</a>
+			</li>
+		</ul>
+	</td>
+	</if>
+	<if test="mmicon:|:$this->memberData['is_mod'] == 1 and $inforum == 1">
+		<if test="archivedCb:|:$data['_isArchived']">
+			<td class='col_f_mod short'>&nbsp;</td>
+		<else />
+			<td class='col_f_mod short'>
+				<a href='#' class='ipsModMenu' id='topic_mod_{$data['real_tid']}' title='{$this->lang->words['mod_actions']}'>&nbsp;</a>
+				<if test="$data['moddable']">
+					<if test="mmtidon:|:$data['tidon'] == 0">
+						<input type='checkbox' class='input_check topic_mod' id='tmod_{$data['real_tid']}' data-approved="{$data['approved']}" data-open="<if test="$data['state'] == 'open'">1<else />0</if>" data-pinned="{$data['pinned']}" />
+					<else />
+						<input type='checkbox' class='input_check topic_mod' id='tmod_{$data['real_tid']}' checked='checked' data-approved="{$data['approved']}" data-open="<if test="$data['state'] == 'open'">1<else />0</if>" data-pinned="{$data['pinned']}" />
+					</if>
+				</if>
+				<if test="topicIsDeleted:|:$data['_isDeleted']">
+					<ul id='topic_mod_{$data['real_tid']}_menucontent' class='ipbmenu_content' style='display: none'>
+						<if test="tidRestore:|:$forum_data['permissions']['TopicSoftDeleteRestore']">
+							<li class='t_restore'><a href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=sundelete" base="public"}' title='{$this->lang->words['dlt_restore_topic']}'>{$this->lang->words['dlt_restore_topic']}</a></li>
+						</if>
+						<if test="$this->memberData['g_is_supmod'] == 1 || $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['delete_topic']">
+							<li><a class='t_delete' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;do=topicchoice&amp;tact=deletedo&amp;f={$forum_data['id']}&amp;st={$this->request['st']}&amp;selectedtids[{$data['real_tid']}]={$data['real_tid']}&amp;auth_key={$this->member->form_hash}" base="public"}' title='{$this->lang->words['topic_delete']}'>{$this->lang->words['topic_delete']}</a></li>
+						</if>
+					</ul>
+				<else />
+					<if test="topicmoderator:|:$this->memberData['is_mod'] == 1  || $forum_data['permissions']['TopicSoftDelete']">
+						<ul id='topic_mod_{$data['real_tid']}_menucontent' class='ipbmenu_content' style='display: none'>
+							<if test="isUnapproved:|:$data['approved'] == 0">
+								<li><a class='t_approve' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;st={$this->request['st']}&amp;t={$data['real_tid']}&amp;auth_key={$this->member->form_hash}&amp;do=topic_approve&amp;from=forum" base="public"}' title='{$this->lang->words['topic_approve']}'>{$this->lang->words['topic_approve']}</a></li>
+							</if>
+							<li><a class='t_rename' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;auth_key={$this->member->form_hash}&amp;do=05" base="public"}' title='{$this->lang->words['topic_rename']}'>{$this->lang->words['topic_rename']}</a></li>
+							<if test="islink:|:$data['state'] != 'link'">
+								<if test="ispinned:|:$data['pinned'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['pin_topic'])">
+									<li><a class='t_pin' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=16&amp;from=forum" base="public"}' title='{$this->lang->words['topic_unpin']}'>{$this->lang->words['topic_unpin']}</a></li>
+								<else />
+									<if test="issupermod:|:$this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['unpin_topic']">
+										<li><a class='t_pin' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=15&amp;from=forum" base="public"}' title='{$this->lang->words['topic_pin']}'>{$this->lang->words['topic_pin']}</a></li>
+									</if>
+								</if>
+							</if>
+							<if test="closedtopic:|:$data['state'] == 'closed' && $other_data['can_open_topics']">
+								<li><a class='t_lock' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=01" base="public"}' title='{$this->lang->words['topic_open']}'>{$this->lang->words['topic_open']}</a></li>
+							</if>
+							<if test="opentopic:|:$data['state'] == 'open' && $other_data['can_close_topics']">
+								<li><a class='t_lock' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=00&amp;_from=forum" base="public"}' title='{$this->lang->words['topic_close']}'>{$this->lang->words['topic_close']}</a></li>
+							</if>
+							<if test="islink2:|:$data['state'] != 'link' && $other_data['can_move_topics']">
+								<li><a class='t_move' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=topicchoice&amp;tact=move&amp;selectedtids={$data['tid']}" base="public"}'>{$this->lang->words['topic_move']}</a></li>
+							</if>
+							<if test="$this->memberData['g_is_supmod'] == 1 || $forum_data['permissions']['TopicSoftDelete']">
+								<li><a class='t_hide' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;st={$this->request['st']}&amp;t={$data['real_tid']}&amp;auth_key={$this->member->form_hash}&amp;do=03" base="public"}' title='{$this->lang->words['topic_hide']}'>{$this->lang->words['topic_hide']}</a></li>
+							</if>
+							<if test="$this->memberData['g_is_supmod'] == 1 || $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['delete_topic']">
+								<li><a class='t_delete' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;do=topicchoice&amp;tact=deletedo&amp;f={$forum_data['id']}&amp;st={$this->request['st']}&amp;selectedtids[{$data['real_tid']}]={$data['real_tid']}&amp;auth_key={$this->member->form_hash}" base="public"}' title='{$this->lang->words['topic_delete']}'>{$this->lang->words['topic_delete']}</a></li>
+							</if>
+						</ul>
+					</if>
+				</if>
+				<script type='text/javascript'>
+					new ipb.Menu( $('topic_mod_{$data['real_tid']}'), $('topic_mod_{$data['real_tid']}_menucontent') );
+				</script>
+			</td>
+		</if>
+	</if>
+</tr>
+<if test="adCodeCheck:|:isset($data['_adCode']) AND $data['_adCode']">
+<tr>
+	<th scope='col' colspan='<if test="adCodeColSpan:|:$this->memberData['is_mod'] == 1">6<else />5</if>'>
+		{$data['_adCode']}
+	</th>
+</tr>
+</if>
