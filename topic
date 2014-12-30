@@ -34,7 +34,13 @@
 				<a href="{parse url="$nav[1]" template="showforum" base="public" seotitle="$nav[2]"}" class="ipsText_small desc">{$nav[0]}</a> <span class="ipsText_small desc">&rarr;</span>&nbsp;
 			</foreach>
 		</if>
-		{$data['prefix']}
+		<!-- start SDKiller -->
+		<if test="isPaid:|:$data['paid']">
+			<span class='ipsBadge ipsBadge_yellow ipsBadge_paid'>{$this->lang->words['topic_is_paid']}</span>
+		<else />
+			{$data['prefix']}
+		</if>
+		<!-- endof SDKiller -->
 		<h4>
 			<a itemprop="url" id="tid-link-{$data['_tid']}" href="{$data['_url']}" title='{parse expression="strip_tags($data['title'])"} {$this->lang->words['topic_started_on']} {parse date="$data['start_date']" format="LONG"}' class='topic_title' <if test="topicDeletedReason:|:$data['_isDeleted']">data-tooltip="{parse expression="sprintf( $this->lang->words['tdb__forumindex'], $other_data['sdData'][ $data['tid'] ]['members_display_name'] )"} {parse date="$other_data['sdData'][ $data['tid'] ]['sdl_obj_date']" format="long"}
 					<if test="showReason:|:$forum_data['permissions']['SoftDeleteReason']">
@@ -129,13 +135,21 @@
 							</if>
 							<li><a class='t_rename' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;auth_key={$this->member->form_hash}&amp;do=05" base="public"}' title='{$this->lang->words['topic_rename']}'>{$this->lang->words['topic_rename']}</a></li>
 							<if test="islink:|:$data['state'] != 'link'">
-								<if test="ispinned:|:$data['pinned'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['pin_topic'])">
+								<!-- start SDKiller -->
+								<if test="isPaid:|:$data['paid'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['paid_down'])">
+									<li><a class='t_pin paid_down' href='{parse url="app=forums&amp;module=extra&amp;section=paid&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=down&amp;from=forum" base="public"}' title='{$this->lang->words['topic_paid_down']}'>{$this->lang->words['topic_paid_down']}</a></li>
+								</if>	
+								<if test="isNotPaid:|:!$data['paid'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['paid_up'])">
+									<li><a class='t_pin paid_up' href='{parse url="app=forums&amp;module=extra&amp;section=paid&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=up&amp;from=forum" base="public"}' title='{$this->lang->words['topic_paid_up']}'>{$this->lang->words['topic_paid_up']}</a></li>
+								</if>
+								<if test="ispinned:|:$data['pinned'] && !$data['paid'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['pin_topic'])">
 									<li><a class='t_pin' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=16&amp;from=forum" base="public"}' title='{$this->lang->words['topic_unpin']}'>{$this->lang->words['topic_unpin']}</a></li>
 								<else />
-									<if test="issupermod:|:$this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['unpin_topic']">
+									<if test="issupermod:|:!$data['paid'] && ($this->memberData['g_is_supmod'] OR $this->memberData['forumsModeratorData'][ $forum_data['id'] ]['unpin_topic'])">
 										<li><a class='t_pin' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=15&amp;from=forum" base="public"}' title='{$this->lang->words['topic_pin']}'>{$this->lang->words['topic_pin']}</a></li>
 									</if>
 								</if>
+								<!-- endof SDKiller -->
 							</if>
 							<if test="closedtopic:|:$data['state'] == 'closed' && $other_data['can_open_topics']">
 								<li><a class='t_lock' href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum_data['id']}&amp;t={$data['tid']}&amp;st={$this->request['st']}&amp;auth_key={$this->member->form_hash}&amp;do=01" base="public"}' title='{$this->lang->words['topic_open']}'>{$this->lang->words['topic_open']}</a></li>
