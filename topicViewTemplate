@@ -1,0 +1,455 @@
+<if test="allowRating:|:$forum['forum_allow_rating']">
+{parse js_module="rating"}
+</if>
+{parse js_module="topic"}
+<script type="text/javascript">
+//<![CDATA[
+    ipb.topic.inSection    = 'topicview';
+    ipb.topic.topic_id     = {$topic['tid']};
+    ipb.topic.forum_id     = {$forum['id']};
+    ipb.topic.redirectPost = 1;
+    ipb.topic.start_id     = {parse expression="$this->registry->getClass('topics')->pageToSt( intval($this->request['page']) )"};
+    ipb.topic.page_id      = {parse expression="intval($this->request['page'])"};
+    ipb.topic.topPid       = 0;
+    ipb.topic.counts       = { postTotal: {parse expression="intval($topic['posts']+1)"},
+                              curStart:  ipb.topic.start_id,
+                              perPage:   {parse expression="intval($this->settings['display_max_posts'])"} };
+    //Search Setup
+    ipb.vars['search_type']         = 'forum';
+    ipb.vars['search_type_id']      = {$forum['id']};
+    ipb.vars['search_type_2']       = 'topic';
+    ipb.vars['search_type_id_2']    = {$topic['tid']};
+    
+    <if test="canDeleteUrls:|:!$this->member->is_not_human">
+    // Delete stuff set up
+    ipb.topic.deleteUrls['hardDelete'] = new Template( ipb.vars['base_url'] + "app=forums&module=moderate&section=moderate&do=04&f={$forum['id']}&t={$topic['tid']}&page={$this->request['page']}&auth_key={$this->member->form_hash}&p=#{pid}" );
+    ipb.topic.deleteUrls['softDelete'] = new Template( ipb.vars['base_url'] + "app=forums&module=moderate&section=moderate&do=postchoice&tact=sdelete&t={$topic['tid']}&f={$forum['id']}&auth_key={$this->member->form_hash}&selectedpids[#{pid}]=#{pid}&pid=#{pid}" );
+    </if>
+    
+    ipb.topic.modPerms    = [];
+    <if test="$this->memberData['g_is_supmod']">
+        ipb.topic.modPerms['approve'] = 1;
+        ipb.topic.modPerms['delete'] = 1;
+        ipb.topic.modPerms['hide'] = 1;
+        ipb.topic.modPerms['unhide'] = 1;
+        ipb.topic.modPerms['merge'] = 1;
+        ipb.topic.modPerms['split'] = 1;
+        ipb.topic.modPerms['move'] = 1;
+    <else />
+        <if test="isset( $this->memberData['forumsModeratorData'][ $forum['id'] ] )">
+            ipb.topic.modPerms['approve'] = {$this->memberData['forumsModeratorData'][ $forum['id'] ]['post_q']};
+            ipb.topic.modPerms['delete'] = {$this->memberData['forumsModeratorData'][ $forum['id'] ]['delete_post']};
+            ipb.topic.modPerms['hide'] = {$this->memberData['forumsModeratorData'][ $forum['id'] ]['bw_mod_soft_delete']};
+            ipb.topic.modPerms['unhide'] = {$this->memberData['forumsModeratorData'][ $forum['id'] ]['bw_mod_un_soft_delete']};
+            ipb.topic.modPerms['merge'] = {$this->memberData['forumsModeratorData'][ $forum['id'] ]['split_merge']};
+            ipb.topic.modPerms['split'] = {$this->memberData['forumsModeratorData'][ $forum['id'] ]['split_merge']};
+            ipb.topic.modPerms['move'] = {$this->memberData['forumsModeratorData'][ $forum['id'] ]['split_merge']};
+        </if>
+    </if>
+    
+    ipb.templates['post_moderation'] = new Template("<div id='comment_moderate_box' class='ipsFloatingAction' style='display: none'><span class='desc'>{$this->lang->words['comment_action_count']} </span><select id='tactInPopup' class='input_select'><option value='approve'>{$this->lang->words['cpt_approve']}</option><option value='delete'>{$this->lang->words['cpt_hide']}</option><option value='sundelete'>{$this->lang->words['cpt_undelete']}</option><option value='deletedo'>{$this->lang->words['cpt_delete']}</option><option value='merge'>{$this->lang->words['cpt_merge']}</option><option value='split'>{$this->lang->words['cpt_split']}</option><option value='move'>{$this->lang->words['cpt_move']}</option></select>&nbsp;&nbsp;<input type='button' class='input_submit' id='submitModAction' value='{$this->lang->words['comments_act_go']}' /></div>");
+    
+//]]>
+</script>
+<if test="disablelightbox:|:!$this->settings['disable_lightbox']">
+{parse template="include_lightbox" group="global" params=""}
+</if>
+<if test="followsismember:|:$this->memberData['member_id']">
+{$displayData['follow_data']}
+</if>
+{parse template="userSmallPhoto" group="global" params="array_merge( $topic['_starter'], array( '_customClass' => 'ipsUserPhoto_medium' ) )"}
+<div itemscope itemtype="http://schema.org/Article" class='ipsBox_withphoto'>
+    <if test="topicRating:|:$forum['forum_allow_rating']">
+        <span itemprop="aggregateRating" itemscope itemtype="http://schema.org/AggregateRating" class='rating ipsType_smaller'>
+            <if test="$topic['_allow_rate']">
+                <strong>{$this->lang->words['js_rate_me']}</strong>&nbsp;&nbsp;
+            </if>
+            <if test="$topic['_allow_rate']">
+                <a href='{parse url="app=forums&amp;module=extras&amp;section=rating&amp;t={$topic['tid']}&amp;rating=1&amp;secure_key={$this->member->form_hash}" base="public"}' id='topic_rate_1' title='{$this->lang->words['top_js_1star']}'>
+            </if>
+            <if test="rate1:|:$topic['_rate_int'] >= 1">
+                {parse replacement="rate_on"}
+            <else />
+                {parse replacement="rate_off"}
+            </if>
+            <if test="$topic['_allow_rate']">
+                </a><a href='{parse url="app=forums&amp;module=extras&amp;section=rating&amp;t={$topic['tid']}&amp;rating=2&amp;secure_key={$this->member->form_hash}" base="public"}' id='topic_rate_2' title='{$this->lang->words['top_js_2star']}'>
+            </if>
+            <if test="rate2:|:$topic['_rate_int'] >= 2">
+                {parse replacement="rate_on"}
+            <else />
+                {parse replacement="rate_off"}
+            </if>
+            <if test="$topic['_allow_rate']">
+                </a><a href='{parse url="app=forums&amp;module=extras&amp;section=rating&amp;t={$topic['tid']}&amp;rating=3&amp;secure_key={$this->member->form_hash}" base="public"}' id='topic_rate_3' title='{$this->lang->words['top_js_3star']}'>
+            </if>
+            <if test="rate3:|:$topic['_rate_int'] >= 3">
+                {parse replacement="rate_on"}
+            <else />
+                {parse replacement="rate_off"}
+            </if>
+            <if test="$topic['_allow_rate']">
+                </a><a href='{parse url="app=forums&amp;module=extras&amp;section=rating&amp;t={$topic['tid']}&amp;rating=4&amp;secure_key={$this->member->form_hash}" base="public"}' id='topic_rate_4' title='{$this->lang->words['top_js_4star']}'>
+            </if>
+            <if test="rate4:|:$topic['_rate_int'] >= 4">
+                {parse replacement="rate_on"}
+            <else />
+                {parse replacement="rate_off"}
+            </if>
+            <if test="$topic['_allow_rate']">
+                </a><a href='{parse url="app=forums&amp;module=extras&amp;section=rating&amp;t={$topic['tid']}&amp;rating=5&amp;secure_key={$this->member->form_hash}" base="public"}' id='topic_rate_5' title='{$this->lang->words['top_js_5star']}'>
+            </if>
+            <if test="rate5:|:$topic['_rate_int'] >= 5">
+                {parse replacement="rate_on"}
+            <else />
+                {parse replacement="rate_off"}
+            </if>
+            <if test="$topic['_allow_rate']">
+                </a>
+            </if>
+            <span id='rating_text'>
+                <if test="hasRates:|:$topic['topic_rating_hits'] > 0">
+                    <span itemprop="ratingCount" id='rating_hits'>{$topic['topic_rating_hits']}</span> <span>{$this->lang->words['poll_s_votes']}</span>
+                    <meta itemprop="ratingValue" content="{parse expression="floor($topic['_rate_int'])"}" />
+                </if>
+            </span>
+            <if test="$topic['_allow_rate']">
+                <script type='text/javascript'>
+                //<![CDATA[
+                    rating = new ipb.rating( 'topic_rate_', {
+                                        url: ipb.vars['base_url'] + 'app=forums&module=ajax&section=topics&do=rateTopic&t={$topic['tid']}&md5check=' + ipb.vars['secure_hash'],
+                                        cur_rating: {$topic['_rate_int']},
+                                        rated: <if test="jsHasRates:|:$topic['_rating_value'] != -1">1<else />0</if>,
+                                        allow_rate: {$topic['_allow_rate']},
+                                        multi_rate: 1,
+                                        show_rate_text: true
+                                      } );
+                //]]>
+                </script>
+            </if>
+        </span>
+    </if>
+    <h1 itemprop="name" class='ipsType_pagetitle'>{$topic['title']}</h1>
+    <div class='desc lighter blend_links'>
+         {$this->lang->words['started_by']} <span itemprop="creator">{parse template="userHoverCard" group="global" params="$topic['_starter']"}</span>, <span itemprop="dateCreated" datetime="{parse date="$topic['start_date']" format="YMD" relative="false"}">{parse date="$topic['start_date']" format="SHORT"}</span>
+    </div>
+    <if test="hasTags:|:is_array($topic['tags'])">
+        {$topic['tags']['formatted']['parsedWithoutComma']}
+        <br />
+    </if>
+    <meta itemprop="interactionCount" content="UserComments:{parse expression="intval($topic['posts'] + 1)"}" />
+</div>
+<if test="bestAnswer:|:$displayData['best_answer_post_data']">
+<br />
+<div class='post post_block feature_box entry-content'>
+    <if test="canSeeProfiles1:|:$this->memberData['g_is_supmod'] OR ( $this->memberData['g_mem_info'] && ! IPSMember::isInactive( $displayData['best_answer_post_data']['author'] ) )">
+    <a itemprop="url" href="{parse url="showuser={$displayData['best_answer_post_data']['author']['member_id']}" template="showuser" seotitle="{$displayData['best_answer_post_data']['author']['members_seo_name']}" base="public"}" title="{$this->lang->words['view_profile']}: {$displayData['best_answer_post_data']['author']['members_display_name']}" class='ipsUserPhotoLink'>
+    </if>
+    <img itemprop="image" src='{$displayData['best_answer_post_data']['author']['pp_thumb_photo']}' class='ipsUserPhoto ipsUserPhoto_medium left' />
+    <if test="canSeeProfiles2:|:$this->memberData['g_is_supmod'] OR ( $this->memberData['g_mem_info'] && ! IPSMember::isInactive( $displayData['best_answer_post_data']['author'] ) )">
+    </a>
+    </if>
+    <div class="ipsBox_withphoto">
+    <p class='ipsType_sectiontitle'>
+        <span class='ipsBadge ipsBadge_green'>{$this->lang->words['topic_best_answer']}</span>
+        {parse template="userHoverCard" group="global" params="$displayData['best_answer_post_data']['author']"},
+        <if test="samePageBA:|:isset($post_data[ $displayData['best_answer_post_data']['post']['pid'] ])">
+            <if test="hasPagesBA:|:$this->request['page']">
+                <a href='{parse url="showtopic={$topic['tid']}&amp;page={$this->request['page']}{$post_data[ $displayData['best_answer_post_data']['post']['pid'] ]['post']['PermalinkUrlBit']}#entry{$displayData['best_answer_post_data']['post']['pid']}" template="showtopic" seotitle="{$topic['title_seo']}" base="public"}'>{parse date="$displayData['best_answer_post_data']['post']['post_date']" format="long"}</a>
+            <else />
+                <a href='{parse url="showtopic={$topic['tid']}{$post_data[ $displayData['best_answer_post_data']['post']['pid'] ]['post']['PermalinkUrlBit']}#entry{$displayData['best_answer_post_data']['post']['pid']}" template="showtopic" seotitle="{$topic['title_seo']}" base="public"}'>{parse date="$displayData['best_answer_post_data']['post']['post_date']" format="long"}</a>
+            </if>
+        <else />
+            <a href="{parse url="app=forums&amp;module=forums&amp;section=findpost&amp;pid={$displayData['best_answer_post_data']['post']['pid']}" base="public"}">{parse date="$displayData['best_answer_post_data']['post']['post_date']" format="long"}</a>
+        </if>
+    </p>
+    <p class='ipsPad_top desc'>
+        {$displayData['best_answer_post_data']['post']['post']}
+        <if test="samePageBA2:|:isset($post_data[ $displayData['best_answer_post_data']['post']['pid'] ])">
+            <if test="hasPagesBA2:|:$this->request['page']">
+                <a href='{parse url="showtopic={$topic['tid']}&amp;page={$this->request['page']}{$post_data[ $displayData['best_answer_post_data']['post']['pid'] ]['post']['PermalinkUrlBit']}#entry{$displayData['best_answer_post_data']['post']['pid']}" template="showtopic" seotitle="{$topic['title_seo']}" base="public"}'>
+            <else />
+                <a href='{parse url="showtopic={$topic['tid']}{$post_data[ $displayData['best_answer_post_data']['post']['pid'] ]['post']['PermalinkUrlBit']}#entry{$displayData['best_answer_post_data']['post']['pid']}" template="showtopic" seotitle="{$topic['title_seo']}" base="public"}'>
+            </if>
+        <else />
+            <a href="{parse url="app=forums&amp;module=forums&amp;section=findpost&amp;pid={$displayData['best_answer_post_data']['post']['pid']}" base="public"}">
+        </if>
+            <span class='ipsBadge has_icon ipsBadge_lightgrey'>{$this->lang->words['answer_gotopost']} <img class='icon' src="{$this->settings['img_url']}/right_white_10px.png"></span></a>
+    </p>
+    </div>
+</div>
+</if>
+<if test="topicHasBeenHidden:|:$topic['approved'] == -1">
+    <br />
+    <div class='message error'>
+        {parse expression="sprintf( $this->lang->words['tdb__forumindex'], $this->registry->output->getTemplate('global')->userHoverCard($topic['sdData']) )"} {parse date="$topic['sdData']['sdl_obj_date']" format="long"}
+        <if test="showReason:|:$this->registry->getClass('class_forums')->canSeeSoftDeleteReason( $forum['id'] )">
+            <br /><span><if test="$topic['sdData']['sdl_obj_reason']">{$topic['sdData']['sdl_obj_reason']}<else />{$this->lang->words['tdb__noreasongi']}</if></span>
+        </if>
+        <br /><br />
+        <if test="tbdSoftRestore:|:$this->memberData['g_is_supmod'] == 1 || $this->memberData['forumsModeratorData'][ $forum['id'] ]['bw_mod_un_soft_delete_topic']">
+            <a href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum['id']}&amp;t={$topic['tid']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;do=sundelete" base="public"}' title='{$this->lang->words['dl_ths_restore']}' class='ipsButton_secondary'>{$this->lang->words['dl_ths_restore']}</a>
+        </if>
+        <if test="tbdRestore:|:$this->memberData['g_is_supmod'] == 1 || $this->memberData['forumsModeratorData'][ $forum['id'] ]['delete_topic']">
+            <a href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;f={$forum['id']}&amp;page={$this->request['page']}&amp;t={$topic['tid']}&amp;auth_key={$this->member->form_hash}&amp;do=08" base="public"}' title='{$this->lang->words['dl_ths_delete']}' class='ipsButton_secondary important'>{$this->lang->words['dl_ths_delete']}</a>
+        </if>
+    </div>
+</if>
+<if test="topicHasBeenDeleted:|:$topic['approved'] == 2">
+    <br />
+    <div class='message error'>
+        {$this->lang->words['topic_deleted']}
+        <br /><br />
+        <a href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;do=topic_restore&amp;t={$topic['tid']}&amp;f={$forum['id']}&amp;auth_key={$this->member->form_hash}" base="public"}' title='{$this->lang->words['dl_ths_restore']}' class='ipsButton_secondary'>{$this->lang->words['restore_post']}</a>
+        <a href='{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;do=09&amp;t={$topic['tid']}&amp;f={$forum['id']}&amp;auth_key={$this->member->form_hash}" base="public"}' title='{$this->lang->words['dl_ths_delete']}' class='ipsButton_secondary'>{$this->lang->words['perm_delete_post']}</a>
+    </div>
+</if>
+<br />
+<div class='topic_controls'>
+    {$topic['SHOW_PAGES']}
+    {parse template="archiveStatusMessage" group="topic" params="$topic,$forum"}
+    <if test="isArchivedPostBox:|:!$topic['_isArchived']">
+        <ul class='topic_buttons'>
+            <if test="closedButton:|:$displayData['reply_button']['image'] == 'locked'">
+                <li class='important'>
+                    <if test="pollOnly:|:isset($displayData['poll_data']['poll']['poll_only']) && $displayData['poll_data']['poll']['poll_only']">
+                        <if test="closedButtonLink:|:$displayData['reply_button']['url']">
+                            <a href='{$displayData['reply_button']['url']}' accesskey='r'>{parse replacement="lock_icon"} {$this->lang->words['top_poll_only_reply']}</a>
+                        <else />
+                            <span>{parse replacement="lock_icon"} {$this->lang->words['top_poll_only']}</span>
+                        </if>
+                    <else />
+                        <if test="closedButtonLink:|:$displayData['reply_button']['url']">
+                            <a href='{$displayData['reply_button']['url']}' accesskey='r'>{parse replacement="lock_icon"} {$this->lang->words['top_locked_reply']}</a>
+                        <else />
+                            <span>{parse replacement="lock_icon"} {$this->lang->words['top_locked']}</span>
+                        </if>
+                    </if>
+                </li>
+            <else />
+                <if test="replyButton:|:$displayData['reply_button']['image']">
+                    <if test="replyButtonLink:|:$displayData['reply_button']['url']">
+                        <li><a href='{$displayData['reply_button']['url']}' title='{$this->lang->words['topic_add_reply']}' accesskey='r'>{$this->lang->words['topic_add_reply']}</a></li>
+                    <else />
+                        <li class='disabled'><span><if test="isMemberTop:|: ! $this->memberData['member_id']">{$this->lang->words['topic_no_reply_guest']}<else />{$this->lang->words['top_cannot_reply']}</if></span></li>
+                    </if>
+                </if>
+            </if>
+            <if test="topicDescription:|:$topic['hasUnreadPosts'] AND ( $topic['posts'] + 1 ) > $this->settings['display_max_posts']">
+                <li class='non_button'><a href='{parse url="showtopic={$topic['tid']}&amp;view=getnewpost" template="showtopic" seotitle="{$topic['title_seo']}" base="public"}' title='{$this->lang->words['first_unread_post']}'>{$this->lang->words['go_to_first_unread']}</a></li>
+            </if>
+            <if test="modOptions:|:$displayData['mod_links'] AND ( $this->memberData['is_mod'] OR $this->memberData['member_id'] == $topic['starter_id'] )">
+                <li class='non_button'><a href='#' id='topic_mod_options' title='{$this->lang->words['topic_moderation']}'>{$this->lang->words['topic_moderation']}</a></li>
+            </if>
+        </ul>
+    </if>
+</div>
+<if test="modOptionsDropdown:|:$displayData['mod_links'] AND ( $this->memberData['is_mod'] OR $this->memberData['member_id'] == $topic['starter_id'] )">
+<ul class='ipbmenu_content' id='topic_mod_options_menucontent'  style='display:none'>
+    <foreach loop="mod_links:$displayData['mod_links'] as $_mod_link">
+        <li><a <if test="isDelete:|:$_mod_link['option'] == '08'"> data-confirmaction="true"</if> href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do={$_mod_link['option']}" base="public"}" class='modlink_{$_mod_link['option']}'>{$_mod_link['value']}</a></li>
+    </foreach>
+    <if test="$topic['topic_queuedposts'] AND $this->registry->class_forums->canQueuePosts( $forum['id'] )">
+        <li><a href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do=p_approve" base="public"}">{parse expression="sprintf( $this->lang->words['nmo_p_approve'], $topic['topic_queuedposts'])"}</a></li>
+    </if>
+    <if test="$topic['topic_queuedposts'] AND $this->registry->class_forums->canHardDeletePosts( $forum['id'], $topic )">
+        <li><a href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do=p_delete_approve" base="public"}">{parse expression="sprintf( $this->lang->words['nmo_p_delete_approve'], $topic['topic_queuedposts'])"}</a></li>
+    </if>
+    <if test="$this->registry->class_forums->can_Un_SoftDeletePosts( $forum['id'] ) AND $topic['topic_deleted_posts']">
+        <li><a href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do=p_restore" base="public"}">{parse expression="sprintf( $this->lang->words['nmo_p_restore'], $topic['topic_deleted_posts'])"}</a></li>
+    </if>
+    <if test="$topic['topic_deleted_posts'] AND $this->registry->class_forums->canHardDeletePosts( $forum['id'], $topic )">
+        <li><a href="{parse url="app=forums&amp;module=moderate&amp;section=moderate&amp;t={$topic['tid']}&amp;f={$topic['forum_id']}&amp;page={$this->request['page']}&amp;auth_key={$this->member->form_hash}&amp;_fromTopic=1&amp;do=p_delete_softed" base="public"}">{parse expression="sprintf( $this->lang->words['nmo_p_delete_softed'], $topic['topic_deleted_posts'])"}</a></li>
+    </if>
+    <if test="mmModOptions:|:is_array( $displayData['multi_mod'] ) AND count( $displayData['multi_mod'] )">
+        <foreach loop="mm:$displayData['multi_mod'] as $mm_data">
+            <li><a href="{parse url="app=forums&amp;module=moderate&amp;section=multimod&amp;t={$topic['tid']}&amp;mm_id={$mm_data[0]}" base="public"}">{$mm_data[1]}</a></li>
+        </foreach>
+    </if>
+</ul>
+<script type='text/javascript'>
+    document.observe("dom:loaded", function()
+    {
+        new ipb.Menu( $('topic_mod_options'), $('topic_mod_options_menucontent') );
+    } );
+</script>
+</if>
+<div class='maintitle clear clearfix'>
+    <span class='ipsType_small'>
+        <if test="$topic['posts']">
+            {parse expression="sprintf( ( $topic['posts'] > 1 ) ? $this->lang->words['x_replies_to_topic'] : $this->lang->words['x_reply_to_topic'], $topic['posts'] )"}
+        <else />
+            {$this->lang->words['no_replies_to_topic']}
+        </if>
+    </span>
+    <if test="reputationFilter:|:$this->settings['reputation_enabled'] && $this->settings['reputation_point_types'] != 'like' && $this->settings['reputation_show_content'] && $this->memberData['member_id'] != 0 && is_array($this->caches['reputation_levels'])">
+        <a href='#rep_filter_menucontent' id='rep_filter' class='right ipsType_smaller'>
+            <if test="repFilterDefault:|:$this->memberData['_members_cache']['rep_filter'] && $this->memberData['_members_cache']['rep_filter'] === '*'">
+                {$this->lang->words['rep_f_viewing_all']}
+            <else />
+                {parse expression="sprintf( $this->lang->words['rep_f_hiding'], $this->memberData['_members_cache']['rep_filter'] )"}
+            </if>
+            <img src='{$this->settings['img_url']}/useropts_arrow.png' />
+        </a>
+    </if>
+</div>
+<if test="reputationFilter:|:$this->settings['reputation_enabled'] && $this->settings['reputation_point_types'] != 'like' && $this->settings['reputation_show_content'] && $this->memberData['member_id'] != 0 && is_array($this->caches['reputation_levels'])">
+    <ul id='rep_filter_menucontent' class='ipbmenu_content with_checks' style='display: none'>
+        <li <if test="optSelectStar:|:isset( $this->memberData['_members_cache']['rep_filter'] ) AND $this->memberData['_members_cache']['rep_filter'] === '*'">class='selected'</if>>
+            <a href='{parse url="app=forums&amp;module=forums&amp;section=topics&amp;rep_filter=update&amp;f={$topic['forum_id']}&amp;t={$topic['tid']}&amp;secure_key={$this->member->form_hash}&amp;page={$this->request['page']}&amp;rep_filter_set=*" base="public"}'>{$this->lang->words['rep_f_all_posts']}</a>
+        </li>
+        <if test="repFilterOptions:|:is_array($this->caches['reputation_levels'])">
+            <foreach loop="reputation_levels:$this->caches['reputation_levels'] as $k => $v">
+                <li <if test="optRepFilterSelected:|:isset( $this->memberData['_members_cache']['rep_filter'] ) AND $v['level_points'] == $this->memberData['_members_cache']['rep_filter']">class='selected'</if>>
+                    <a href='{parse url="app=forums&amp;module=forums&amp;section=topics&amp;rep_filter=update&amp;f={$topic['forum_id']}&amp;t={$topic['tid']}&amp;secure_key={$this->member->form_hash}&amp;page={$this->request['page']}&amp;rep_filter_set={$v['level_points']}" base="public"}' rel='nofollow'>
+                        {$this->lang->words['rep_f_hide']} <strong>{$v['level_points']} {$this->lang->words['rep_f_points']}</strong>
+                    </a>
+                </li>
+            </foreach>
+        </if>
+    </ul>
+    <script type='text/javascript'>
+        new ipb.Menu( $('rep_filter'), $('rep_filter_menucontent') );
+    </script>
+</if>
+<div class='topic hfeed clear clearfix'>
+    
+    {$displayData['poll_data']['html']}
+<if test="hasPosts:|:is_array( $post_data ) AND count( $post_data )">
+    <div class='ipsBox'>
+        <div class='ipsBox_container' id='ips_Posts'>
+            <foreach loop="post_data:$post_data as $post">
+                {parse template="post" group="topic" params="$post, $displayData, $topic, $forum"}
+            </foreach>
+        </div>
+    </div>
+</if>
+<hr />
+<div class='topic_controls clear ipsPad_top_bottom_half'>
+    <if test="$topic['SHOW_PAGES']">
+        <div class='left'>{$topic['SHOW_PAGES']}</div>
+    </if>
+    <div class='ipsPad_top_slimmer right'>
+        <if test="modOptions2:|:$displayData['mod_links'] AND ( $this->memberData['is_mod'] OR $this->memberData['member_id'] == $topic['starter_id'] )">
+            <a href='#' id='topic_mod_options_alt'  class="ipsType_small desc" title='{$this->lang->words['topic_moderation']}'>{$this->lang->words['topic_moderation']}</a> &middot;
+        </if>
+        <a href='{parse url="showforum={$forum['id']}" template="showforum" seotitle="{$forum['name_seo']}" base="public"}' class="ipsType_small desc">{parse expression="sprintf( $this->lang->words['go_back_to'], $forum['name'] )"}</a>
+        <if test="hasUnreadNext:|:$forum['_hasUnreadTopics']">
+            &middot; <a href='{parse url="showtopic={$topic['tid']}&amp;view=getnextunread" template="showtopicnextunread" seotitle="{$topic['title_seo']}" base="public"}' rel="nofollow" class="ipsType_small desc">{$this->lang->words['goto_next_unread_topic']}</a>
+        </if>
+    </div>
+</div>
+<if test="fastReply:|:$displayData['fast_reply'] && $displayData['reply_button']['url']">
+<hr />
+<div class='ipsBox' id='fast_reply_wrapper'>
+    <div class='ipsBox_container ipsPad'>
+        <h1 class='ipsType_subtitle'>{$this->lang->words['topic_add_reply']}</h1>
+        <if test="isLockedFR:|:$topic['state'] == 'closed'"><span class='error'>{$this->lang->words['locked_reply_fr']}</span><br /></if>
+        <br />
+        <if test="isMember:|:$this->memberData['member_id']">
+            <a href="{parse url="showuser={$this->memberData['member_id']}" seotitle="{$this->memberData['members_seo_name']}" template="showuser" base="public"}" title='{$this->lang->words['your_profile']}' class='ipsUserPhotoLink left'><img src='{$this->memberData['pp_small_photo']}' alt="{parse expression="sprintf($this->lang->words['users_photo'],$this->memberData['members_display_name'])"}" class='ipsUserPhoto ipsUserPhoto_medium' /></a>
+        <else />
+            <div class='left'>{IPSMember::buildNoPhoto(0, 'small' )}</div>
+        </if>
+        <div class='ipsBox_withphoto clearfix'>
+            <form action="{parse url="" base="public"}" method="post" id='ips_fastReplyForm'>
+                <input type="hidden" name="app" value="forums" />
+                <input type="hidden" name="module" value="post" />
+                <input type="hidden" name="section" value="post" />
+                <input type="hidden" name="do" value="reply_post_do" />
+                <input type="hidden" name="f" value="{$forum['id']}" />
+                <input type="hidden" name="t" value="{$topic['tid']}" />
+                <input type="hidden" name="st" value="{$this->request['st']}" />
+                <input type="hidden" name="auth_key" value="{$this->member->form_hash}" />
+                <input type="hidden" name="fast_reply_used" value="1" />
+                <input type="hidden" name="enableemo" value="yes" />
+                <input type="hidden" name="enablesig" value="yes" />
+                <if test="$this->memberData['auto_track']">
+                    <input type="hidden" name="enabletrack" value="1" />
+                <else />
+                    <input type="hidden" name="enabletrack" value="{$topic['_isLiked']}" />
+                </if>
+                <if test="is_array($topic['_fastReplyStatusMessage']) AND count($topic['_fastReplyStatusMessage']) AND strlen($topic['_fastReplyStatusMessage'][0])">
+                    <div class='message'>{parse expression="implode( '<br />', $topic['_fastReplyStatusMessage'] )"}</div>
+                </if>
+                {parse editor="Post" options="array( 'type' => 'full', 'minimize' => 1, 'isTypingCallBack' => 'ipb.topic.isTypingCallBack', 'height' => 180, 'legacyMode' => 'off', 'autoSaveKey' => 'reply-' . $topic[tid], 'warnInfo' => 'fastReply', 'modAll' => $topic['_fastReplyModAll'] )"}
+                <br />
+                
+                <fieldset class='right' id='fast_reply_controls'>
+                    <input type='submit' name="submit" class='input_submit' value='{$this->lang->words['qr_post']}' tabindex='50' accesskey='s' id='submit_post' />&nbsp;&nbsp;<input type='submit' name="preview" class='input_submit alt' value='{$this->lang->words['qr_more_opts']}' tabindex='51' id='full_compose' />
+                </fieldset>
+            </form>
+        </div>
+        <div id='ips_HasReplies'></div>
+    </div>
+</div>
+<script type='text/javascript'>
+    ipb.topic.fastReplyId   = '{$this->settings['_lastEditorId']}';
+</script>
+<else />
+    <if test="loadJsManually:|:$displayData['load_editor_js']">
+        {parse template="editorLoadJs" group="editors" params="array( 'smilies' => $displayData['smilies'] )"}
+    </if>
+</if>
+<!-- Close topic -->
+</div>
+<!-- BOTTOM BUTTONS -->
+<if test="canShare:|:!$forum['disable_sharelinks'] AND $this->settings['sl_enable']">
+    <br />
+    <div class='clear clearfix left'>
+        {IPSLib::shareLinks( $topic['title'], $topic['posts'] > 300 ? array( 'skip' => array( 'print', 'download' ) ) : array() )}
+    </div>
+    <br />
+</if>
+<!-- SAME TAGGED -->
+<if test="sameTagged:|:is_array( $displayData['same_tagged'] ) and count( $displayData['same_tagged'] )">
+    <br />
+    <div class='ipsBox'>
+        <h3 class='maintitle'>{parse expression="sprintf( $this->lang->words['topic_same_tagged_as'], $topic['tags']['formatted']['string'] )"}</h3>
+        <div class='ipsBox_container'>
+            <table class='ipb_table topic_list'>
+            <foreach loop="topics:$displayData['same_tagged'] as $tid => $tdata">
+                {parse template="topic" group="forum" params="$tdata, $forum, array(), false"}
+            </foreach>
+            </table>
+        </div>
+    </div>
+</if>
+<!-- ACTIVE USERS -->
+<if test="topicActiveUsers:|:is_array( $displayData['active_users'] ) AND count( $displayData['active_users'] )">
+    <div id='topic_stats' class='statistics clear clearfix'>
+        <div id='topic_active_users' class='active_users'>
+            <h4 class='statistics_head'>{parse expression="sprintf( $this->lang->words['active_users_title'], $displayData['active_users']['stats']['total'] )"}</h4>
+            <p class='statistics_brief desc'>{parse expression="sprintf( $this->lang->words['active_users_detail'], $displayData['active_users']['stats']['members'], $displayData['active_users']['stats']['guests'], $displayData['active_users']['stats']['anon'] )"}</p>
+            <if test="auNames:|:is_array( $displayData['active_users']['names'] ) AND count( $displayData['active_users']['names'] )">
+                <br />
+                <ul class='ipsList_inline'>
+                    {parse expression="implode( ', ', $displayData['active_users']['names'] )"}
+                </ul>
+            </if>
+        </div>
+    </div>
+</if>
+<if test="scrollToPost:|:$this->request['gopid']">
+<script type='text/javascript'>
+    var gopid = "{$this->request['gopid']}".replace(/&amp;/g, '');
+    ipb.topic.scrollToPost( parseInt( gopid ) );
+</script>
+</if>
+{parse template="include_highlighter" group="global" params="1"}
+<div id='multiQuoteInsert' style='display: none;' class='ipsFloatingAction'>
+    <span class='ipsButton no_width' id='mqbutton'>{$this->lang->words['mq_reply_quoted_posts']}</span>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href='#' id='multiQuoteClear' class='ipsType_smaller desc' title='{$this->lang->words['mq_clear_desc']}'>{$this->lang->words['mq_clear']}</a> &nbsp;&nbsp;&nbsp;
+</div>
+<form id="modform" method="post" action="{parse url="" base="public"}">
+    <input type="hidden" name="app" value="forums" />
+    <input type="hidden" name="module" value="moderate" />
+    <input type="hidden" name="section" value="moderate" />
+    <input type="hidden" name="do" value="postchoice" />
+    <input type="hidden" name="f" value="{$topic['forum_id']}" />
+    <input type="hidden" name="t" value="{$topic['tid']}" />
+    <input type="hidden" name="auth_key" value="{$this->member->form_hash}" />
+    <input type="hidden" name="st" value="{$this->request['st']}" />
+    <input type="hidden" name="page" value="{$this->request['page']}" />
+    <input type="hidden" value="{$this->request['selectedpids']}" name="selectedpidsJS" id='selectedpidsJS' />
+    <input type="hidden" name="tact" id="tact" value="" />
+</form>
